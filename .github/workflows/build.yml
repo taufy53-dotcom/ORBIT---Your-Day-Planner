@@ -82,9 +82,6 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup -y
 
-      # =============================================
-      # CREATE INSTALLER SCRIPT
-      # =============================================
       - name: Create Inno Setup script
         shell: pwsh
         run: |
@@ -109,9 +106,7 @@ jobs:
           Name: "{group}\ORBIT - Your Day Planner"; Filename: "{app}\Orbit.exe"
 
           [Run]
-          Filename: "{app}\Orbit.exe"
-          Description: "Launch ORBIT"
-          Flags: nowait postinstall skipifsilent
+          Filename: "{app}\Orbit.exe"; Description: "Launch ORBIT"; Flags: nowait postinstall skipifsilent
           "@ | Out-File -FilePath "orbit.iss" -Encoding utf8
 
       # =============================================
