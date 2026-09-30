@@ -51,9 +51,10 @@ jobs:
       # =============================================
       # BUILD ORBIT ACCOUNT
       # =============================================
-      - name: Build Orbit Account
-      run: pyinstaller --noconfirm --clean --windowed --name OrbitAccount --add-data "imgs;imgs" acc.py
 
+      - name: Build Orbit Account
+        run: pyinstaller --noconfirm --clean --windowed --name OrbitAccount --add-data "imgs;imgs" acc.py
+     
       # =============================================
       # PREPARE INSTALLER FILES
       # =============================================
