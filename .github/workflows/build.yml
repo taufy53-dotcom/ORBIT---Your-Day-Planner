@@ -1,0 +1,183 @@
+name: Build Orbit
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+
+jobs:
+
+  build:
+    runs-on: windows-latest
+
+    steps:
+
+      # ==========================================
+      # CHECKOUT PROJECT
+      # ==========================================
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # ==========================================
+      # SETUP PYTHON
+      # ==========================================
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+
+      # ==========================================
+      # INSTALL DEPENDENCIES
+      # ==========================================
+
+      - name: Install dependencies
+        shell: powershell
+        run: |
+          python -m pip install --upgrade pip
+
+          if (Test-Path "requirements.txt") {
+              pip install -r requirements.txt
+          }
+
+          pip install pyinstaller
+
+
+      # ==========================================
+      # BUILD ORBIT
+      # ==========================================
+
+      - name: Build Orbit
+        shell: powershell
+        run: |
+          pyinstaller `
+            --noconfirm `
+            --clean `
+            --windowed `
+            --name Orbit `
+            --add-data "imgs;imgs" `
+            app.py
+
+
+      # ==========================================
+      # CREATE INSTALLER DIRECTORY
+      # ==========================================
+
+      - name: Prepare installer files
+        shell: powershell
+        run: |
+
+          New-Item -ItemType Directory -Force -Path "installer"
+
+          Copy-Item -Recurse "dist\Orbit\*" "installer\"
+
+
+      # ==========================================
+      # CREATE INNO SETUP SCRIPT
+      # ==========================================
+
+      - name: Create installer script
+        shell: powershell
+        run: |
+
+          @"
+          #define MyAppName "Orbit"
+          #define MyAppVersion "1.0.0"
+          #define MyAppPublisher "Orbit"
+          #define MyAppExeName "Orbit.exe"
+
+          [Setup]
+
+          AppId={{A7D8E8F1-9E8B-4E4F-9D9F-ORBIT2026}}
+
+          AppName={#MyAppName}
+          AppVersion={#MyAppVersion}
+          AppPublisher={#MyAppPublisher}
+
+          DefaultDirName={autopf}\Orbit
+
+          DefaultGroupName=Orbit
+
+          OutputDir=installer_output
+          OutputBaseFilename=Orbit-Setup
+
+          Compression=lzma
+          SolidCompression=yes
+
+          ArchitecturesInstallIn64BitMode=x64
+
+          UninstallDisplayIcon={app}\{#MyAppExeName}
+
+
+          [Files]
+
+          Source: "installer\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+
+          [Icons]
+
+          ; Desktop shortcut
+
+          Name: "{autodesktop}\Orbit"; \
+          Filename: "{app}\{#MyAppExeName}"; \
+          WorkingDir: "{app}"
+
+
+          ; Start Menu shortcut
+
+          Name: "{group}\Orbit"; \
+          Filename: "{app}\{#MyAppExeName}"; \
+          WorkingDir: "{app}"
+
+
+          [Run]
+
+          ; Launch Orbit after installation
+
+          Filename: "{app}\{#MyAppExeName}"; \
+          Description: "Launch Orbit"; \
+          Flags: nowait postinstall skipifsilent
+
+          "@ | Out-File -Encoding UTF8 "orbit.iss"
+
+
+      # ==========================================
+      # INSTALL INNO SETUP
+      # ==========================================
+
+      - name: Setup Inno Setup
+        shell: powershell
+        run: |
+
+          choco install innosetup --no-progress -y
+
+
+      # ==========================================
+      # BUILD WINDOWS INSTALLER
+      # ==========================================
+
+      - name: Build installer
+        shell: powershell
+        run: |
+
+          New-Item -ItemType Directory -Force -Path "installer_output"
+
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            "orbit.iss"
+
+
+      # ==========================================
+      # UPLOAD INSTALLER
+      # ==========================================
+
+      - name: Upload Orbit installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Orbit-Windows-Installer
+          path: installer_output/Orbit-Setup.exe
