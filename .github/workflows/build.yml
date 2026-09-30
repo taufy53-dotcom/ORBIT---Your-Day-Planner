@@ -11,71 +11,51 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # ---------------------------------------------
+
+      # =============================================
       # CHECKOUT
-      # ---------------------------------------------
+      # =============================================
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ---------------------------------------------
-      # PYTHON
-      # ---------------------------------------------
+      # =============================================
+      # SETUP PYTHON
+      # =============================================
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      # ---------------------------------------------
+      # =============================================
       # INSTALL DEPENDENCIES
-      # ---------------------------------------------
+      # =============================================
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pyinstaller
 
-      # ---------------------------------------------
-      # BUILD ORBIT MAIN APPLICATION
-      # ---------------------------------------------
+      # =============================================
+      # BUILD ORBIT
+      # =============================================
       - name: Build Orbit
-        run: |
-          pyinstaller ^
-            --noconfirm ^
-            --clean ^
-            --windowed ^
-            --name Orbit ^
-            --add-data "imgs;imgs" ^
-            app.py
+        run: pyinstaller --noconfirm --clean --windowed --name Orbit --add-data "imgs;imgs" app.py
 
-      # ---------------------------------------------
-      # BUILD ORBIT TODO APPLICATION
-      # ---------------------------------------------
+      # =============================================
+      # BUILD ORBIT TASKS
+      # =============================================
       - name: Build Orbit Tasks
-        run: |
-          pyinstaller ^
-            --noconfirm ^
-            --clean ^
-            --windowed ^
-            --name OrbitTodo ^
-            --add-data "imgs;imgs" ^
-            todo.py
+        run: pyinstaller --noconfirm --clean --windowed --name OrbitTodo --add-data "imgs;imgs" todo.py
 
-      # ---------------------------------------------
-      # BUILD ORBIT ACCOUNT APPLICATION
-      # ---------------------------------------------
+      # =============================================
+      # BUILD ORBIT ACCOUNT
+      # =============================================
       - name: Build Orbit Account
-        run: |
-          pyinstaller ^
-            --noconfirm ^
-            --clean ^
-            --windowed ^
-            --name OrbitAccount ^
-            --add-data "imgs;imgs" ^
-            acc.py
+        run: pyinstaller --noconfirm --clean --windowed --name OrbitAccount --add-data "imgs;imgs" acc.py
 
-      # ---------------------------------------------
-      # CREATE INSTALLER DIRECTORY
-      # ---------------------------------------------
+      # =============================================
+      # PREPARE INSTALLER FILES
+      # =============================================
       - name: Prepare installer files
         shell: pwsh
         run: |
@@ -96,16 +76,15 @@ jobs:
             -Recurse `
             -Force
 
-      # ---------------------------------------------
+      # =============================================
       # INSTALL INNO SETUP
-      # ---------------------------------------------
+      # =============================================
       - name: Install Inno Setup
-        run: |
-          choco install innosetup -y
+        run: choco install innosetup -y
 
-      # ---------------------------------------------
+      # =============================================
       # CREATE INSTALLER SCRIPT
-      # ---------------------------------------------
+      # =============================================
       - name: Create Inno Setup script
         shell: pwsh
         run: |
@@ -135,16 +114,15 @@ jobs:
           Flags: nowait postinstall skipifsilent
           "@ | Out-File -FilePath "orbit.iss" -Encoding utf8
 
-      # ---------------------------------------------
-      # BUILD WINDOWS INSTALLER
-      # ---------------------------------------------
+      # =============================================
+      # BUILD INSTALLER
+      # =============================================
       - name: Build installer
-        run: |
-          iscc orbit.iss
+        run: iscc orbit.iss
 
-      # ---------------------------------------------
+      # =============================================
       # UPLOAD INSTALLER
-      # ---------------------------------------------
+      # =============================================
       - name: Upload ORBIT installer
         uses: actions/upload-artifact@v4
         with:
