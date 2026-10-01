@@ -115,15 +115,16 @@ TODO_FILE = os.path.join(
     "todo.py"
 )
 
-
 # Installed / PyInstaller version
-TODO_EXE = os.path.join(
-    os.path.dirname(
-        sys.executable
-    ),
-    "OrbitTodo.exe"
+INSTALL_DIR = os.path.dirname(
+    sys.executable
 )
 
+TODO_EXE = os.path.join(
+    INSTALL_DIR,
+    "OrbitTodo",
+    "OrbitTodo.exe"
+)
 
 # =========================================================
 # BACKGROUND
