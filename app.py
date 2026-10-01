@@ -17,38 +17,27 @@ ctk.set_default_color_theme("blue")
 # PATHS
 # =========================================================
 
-# Folder where app.py / Orbit.exe is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-# =========================================================
-# USER DATA PATH
-# =========================================================
+# ---------------------------------------------------------
+# DEVELOPMENT PATHS
+# ---------------------------------------------------------
 
-# User data should NOT be stored inside Program Files.
-APP_DATA_DIR = os.path.join(
+BACKGROUND_FILE = os.path.join(
+    BASE_DIR,
+    "imgs",
+    "background.png"
+)
+
+PROFILE_FILE = os.path.join(
     os.environ.get(
         "APPDATA",
         os.path.expanduser("~")
     ),
-    "Orbit"
-)
-
-os.makedirs(
-    APP_DATA_DIR,
-    exist_ok=True
-)
-
-
-PROFILE_FILE = os.path.join(
-    APP_DATA_DIR,
+    "Orbit",
     "profile.json"
 )
-
-
-# =========================================================
-# DEVELOPMENT FILES
-# =========================================================
 
 TODO_FILE = os.path.join(
     BASE_DIR,
@@ -61,31 +50,29 @@ ACC_FILE = os.path.join(
 )
 
 
-# =========================================================
-# PACKAGED APPLICATIONS
-# =========================================================
+# ---------------------------------------------------------
+# INSTALLED APPLICATION PATHS
+# ---------------------------------------------------------
+
+INSTALL_DIR = os.path.dirname(
+    sys.executable
+)
 
 TODO_EXE = os.path.join(
-    BASE_DIR,
-    "OrbitTodo",
+    INSTALL_DIR,
     "OrbitTodo.exe"
 )
 
 ACC_EXE = os.path.join(
-    BASE_DIR,
-    "OrbitAccount",
+    INSTALL_DIR,
     "OrbitAccount.exe"
 )
 
 
-# =========================================================
-# BACKGROUND
-# =========================================================
-
-BACKGROUND_FILE = os.path.join(
-    BASE_DIR,
-    "imgs",
-    "background.png"
+# Create user data directory
+os.makedirs(
+    os.path.dirname(PROFILE_FILE),
+    exist_ok=True
 )
 
 
@@ -108,7 +95,7 @@ app.minsize(
 )
 
 
-# ESC = CLOSE
+# ESC = close
 app.bind(
     "<Escape>",
     lambda event: app.destroy()
@@ -125,10 +112,10 @@ try:
         BACKGROUND_FILE
     )
 
-except FileNotFoundError:
+except Exception as error:
 
     print(
-        f"Background image not found:\n{BACKGROUND_FILE}"
+        f"Could not load background:\n{error}"
     )
 
     app.destroy()
@@ -161,21 +148,15 @@ def resize_background(event):
     global last_width
     global last_height
 
-    # Only react to the main window
     if event.widget != app:
         return
 
     window_width = event.width
     window_height = event.height
 
-    if (
-        window_width <= 0
-        or
-        window_height <= 0
-    ):
+    if window_width <= 0 or window_height <= 0:
         return
 
-    # Prevent unnecessary resizing
     if (
         window_width == last_width
         and
@@ -186,10 +167,8 @@ def resize_background(event):
     last_width = window_width
     last_height = window_height
 
-    # Original image size
     image_width, image_height = original_image.size
 
-    # Calculate scale
     scale = max(
         window_width / image_width,
         window_height / image_height
@@ -203,7 +182,6 @@ def resize_background(event):
         image_height * scale
     )
 
-    # Resize image
     resized_image = original_image.resize(
         (
             new_width,
@@ -212,7 +190,6 @@ def resize_background(event):
         Image.Resampling.LANCZOS
     )
 
-    # Center crop
     left = (
         new_width - window_width
     ) // 2
@@ -238,7 +215,6 @@ def resize_background(event):
         )
     )
 
-    # Convert image for CustomTkinter
     bg_image = ctk.CTkImage(
         light_image=cropped_image,
         dark_image=cropped_image,
@@ -252,11 +228,9 @@ def resize_background(event):
         image=bg_image
     )
 
-    # Keep reference
     background_label.bg_image = bg_image
 
 
-# Listen for window resizing
 app.bind(
     "<Configure>",
     resize_background
@@ -269,14 +243,14 @@ app.bind(
 
 def open_page(
     python_file,
-    packaged_exe
+    executable_file
 ):
 
     try:
 
-        # =================================================
-        # PACKAGED APPLICATION
-        # =================================================
+        # -------------------------------------------------
+        # INSTALLED VERSION
+        # -------------------------------------------------
 
         if getattr(
             sys,
@@ -284,9 +258,8 @@ def open_page(
             False
         ):
 
-            # Check if packaged EXE exists
             if not os.path.exists(
-                packaged_exe
+                executable_file
             ):
 
                 print(
@@ -294,36 +267,29 @@ def open_page(
                 )
 
                 print(
-                    packaged_exe
+                    executable_file
                 )
 
                 return
 
             print(
-                "Launching:"
-            )
-
-            print(
-                packaged_exe
+                f"Launching:\n{executable_file}"
             )
 
             subprocess.Popen(
-                [
-                    packaged_exe
-                ],
+                [executable_file],
                 cwd=os.path.dirname(
-                    packaged_exe
+                    executable_file
                 )
             )
 
 
-        # =================================================
+        # -------------------------------------------------
         # DEVELOPMENT VERSION
-        # =================================================
+        # -------------------------------------------------
 
         else:
 
-            # Check if Python file exists
             if not os.path.exists(
                 python_file
             ):
@@ -339,11 +305,7 @@ def open_page(
                 return
 
             print(
-                "Launching:"
-            )
-
-            print(
-                python_file
+                f"Launching:\n{python_file}"
             )
 
             subprocess.Popen(
@@ -362,12 +324,10 @@ def open_page(
     except Exception as error:
 
         print(
-            "Could not open application:"
+            "Could not launch application:"
         )
 
-        print(
-            error
-        )
+        print(error)
 
 
 # =========================================================
@@ -385,9 +345,9 @@ def on_button_click():
     )
 
 
-    # =====================================================
+    # -----------------------------------------------------
     # PROFILE EXISTS
-    # =====================================================
+    # -----------------------------------------------------
 
     if os.path.exists(
         PROFILE_FILE
@@ -397,15 +357,16 @@ def on_button_click():
             "Profile found."
         )
 
+        # Open Todo
         open_page(
             TODO_FILE,
             TODO_EXE
         )
 
 
-    # =====================================================
+    # -----------------------------------------------------
     # PROFILE DOES NOT EXIST
-    # =====================================================
+    # -----------------------------------------------------
 
     else:
 
@@ -413,6 +374,7 @@ def on_button_click():
             "Profile not found."
         )
 
+        # Open Account
         open_page(
             ACC_FILE,
             ACC_EXE
