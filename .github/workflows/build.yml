@@ -15,81 +15,117 @@ jobs:
       # =============================================
       # CHECKOUT
       # =============================================
+
       - name: Checkout repository
         uses: actions/checkout@v4
+
 
       # =============================================
       # SETUP PYTHON
       # =============================================
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
+
       # =============================================
       # INSTALL DEPENDENCIES
       # =============================================
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install --upgrade pyinstaller
-          pyinstaller --version
+
 
       # =============================================
       # BUILD ORBIT
       # =============================================
+
       - name: Build Orbit
-        run: pyinstaller --noconfirm --clean --windowed --name Orbit --add-data "imgs;imgs" app.py
+        run: |
+          pyinstaller --noconfirm --clean --windowed --name Orbit --add-data "imgs;imgs" app.py
+
 
       # =============================================
       # BUILD ORBIT TASKS
       # =============================================
+
       - name: Build Orbit Tasks
-        run: pyinstaller --noconfirm --clean --windowed --name OrbitTodo --add-data "imgs;imgs" todo.py
+        run: |
+          pyinstaller --noconfirm --clean --windowed --name OrbitTodo --add-data "imgs;imgs" todo.py
+
 
       # =============================================
       # BUILD ORBIT ACCOUNT
       # =============================================
 
       - name: Build Orbit Account
-        run: pyinstaller --noconfirm --clean --windowed --name OrbitAccount --add-data "imgs;imgs" acc.py
-     
+        run: |
+          pyinstaller --noconfirm --clean --windowed --name OrbitAccount --add-data "imgs;imgs" acc.py
+
+
       # =============================================
       # PREPARE INSTALLER FILES
       # =============================================
+
       - name: Prepare installer files
         shell: pwsh
         run: |
+
           New-Item -ItemType Directory -Force -Path installer_files
 
-          Copy-Item "dist\Orbit\*" `
+          # Main application
+          Copy-Item `
+            "dist\Orbit\*" `
             "installer_files\" `
             -Recurse `
             -Force
 
-          Copy-Item "dist\OrbitTodo\*" `
-            "installer_files\" `
+          # Todo application
+          New-Item `
+            -ItemType Directory `
+            -Force `
+            -Path "installer_files\OrbitTodo"
+
+          Copy-Item `
+            "dist\OrbitTodo\*" `
+            "installer_files\OrbitTodo\" `
             -Recurse `
             -Force
 
-          Copy-Item "dist\OrbitAccount\*" `
-            "installer_files\" `
+          # Account application
+          New-Item `
+            -ItemType Directory `
+            -Force `
+            -Path "installer_files\OrbitAccount"
+
+          Copy-Item `
+            "dist\OrbitAccount\*" `
+            "installer_files\OrbitAccount\" `
             -Recurse `
             -Force
+
 
       # =============================================
       # INSTALL INNO SETUP
       # =============================================
+
       - name: Install Inno Setup
         run: choco install innosetup -y
+
 
       # =============================================
       # CREATE INNO SETUP SCRIPT
       # =============================================
+
       - name: Create Inno Setup script
         shell: pwsh
         run: |
+
           @"
           [Setup]
           AppName=ORBIT - Your Day Planner
@@ -104,25 +140,34 @@ jobs:
           PrivilegesRequired=admin
 
           [Files]
+
           Source: "installer_files\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 
           [Icons]
+
           Name: "{autodesktop}\ORBIT - Your Day Planner"; Filename: "{app}\Orbit.exe"
+
           Name: "{group}\ORBIT - Your Day Planner"; Filename: "{app}\Orbit.exe"
 
           [Run]
+
           Filename: "{app}\Orbit.exe"; Description: "Launch ORBIT"; Flags: nowait postinstall skipifsilent
+
           "@ | Out-File -FilePath "orbit.iss" -Encoding utf8
+
 
       # =============================================
       # BUILD INSTALLER
       # =============================================
+
       - name: Build installer
         run: iscc orbit.iss
+
 
       # =============================================
       # UPLOAD INSTALLER
       # =============================================
+
       - name: Upload ORBIT installer
         uses: actions/upload-artifact@v4
         with:
