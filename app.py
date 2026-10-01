@@ -17,21 +17,38 @@ ctk.set_default_color_theme("blue")
 # PATHS
 # =========================================================
 
-# Folder where app.py is located
+# Folder where app.py / Orbit.exe is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Important project paths
-BACKGROUND_FILE = os.path.join(
-    BASE_DIR,
-    "imgs",
-    "background.png"
+
+# =========================================================
+# USER DATA PATH
+# =========================================================
+
+# User data should NOT be stored inside Program Files.
+APP_DATA_DIR = os.path.join(
+    os.environ.get(
+        "APPDATA",
+        os.path.expanduser("~")
+    ),
+    "Orbit"
 )
 
+os.makedirs(
+    APP_DATA_DIR,
+    exist_ok=True
+)
+
+
 PROFILE_FILE = os.path.join(
-    BASE_DIR,
-    "data",
+    APP_DATA_DIR,
     "profile.json"
 )
+
+
+# =========================================================
+# DEVELOPMENT FILES
+# =========================================================
 
 TODO_FILE = os.path.join(
     BASE_DIR,
@@ -45,6 +62,34 @@ ACC_FILE = os.path.join(
 
 
 # =========================================================
+# PACKAGED APPLICATIONS
+# =========================================================
+
+TODO_EXE = os.path.join(
+    BASE_DIR,
+    "OrbitTodo",
+    "OrbitTodo.exe"
+)
+
+ACC_EXE = os.path.join(
+    BASE_DIR,
+    "OrbitAccount",
+    "OrbitAccount.exe"
+)
+
+
+# =========================================================
+# BACKGROUND
+# =========================================================
+
+BACKGROUND_FILE = os.path.join(
+    BASE_DIR,
+    "imgs",
+    "background.png"
+)
+
+
+# =========================================================
 # APP
 # =========================================================
 
@@ -52,14 +97,18 @@ app = ctk.CTk()
 
 app.title("Orbit")
 
-app.attributes("-fullscreen", True)
+app.attributes(
+    "-fullscreen",
+    True
+)
 
 app.minsize(
     800,
     600
 )
 
-# ESC = close
+
+# ESC = CLOSE
 app.bind(
     "<Escape>",
     lambda event: app.destroy()
@@ -119,7 +168,11 @@ def resize_background(event):
     window_width = event.width
     window_height = event.height
 
-    if window_width <= 0 or window_height <= 0:
+    if (
+        window_width <= 0
+        or
+        window_height <= 0
+    ):
         return
 
     # Prevent unnecessary resizing
@@ -199,7 +252,7 @@ def resize_background(event):
         image=bg_image
     )
 
-    # Keep reference so image doesn't disappear
+    # Keep reference
     background_label.bg_image = bg_image
 
 
@@ -214,37 +267,107 @@ app.bind(
 # OPEN NEXT PAGE
 # =========================================================
 
-def open_page(file_path):
-
-    # Check if the Python file exists
-    if not os.path.exists(file_path):
-
-        print(
-            f"File not found:\n{file_path}"
-        )
-
-        return
+def open_page(
+    python_file,
+    packaged_exe
+):
 
     try:
 
-        subprocess.Popen(
-            [
-                sys.executable,
-                file_path
-            ],
-            cwd=BASE_DIR
-        )
+        # =================================================
+        # PACKAGED APPLICATION
+        # =================================================
 
-        # Close current window
+        if getattr(
+            sys,
+            "frozen",
+            False
+        ):
+
+            # Check if packaged EXE exists
+            if not os.path.exists(
+                packaged_exe
+            ):
+
+                print(
+                    "Application not found:"
+                )
+
+                print(
+                    packaged_exe
+                )
+
+                return
+
+            print(
+                "Launching:"
+            )
+
+            print(
+                packaged_exe
+            )
+
+            subprocess.Popen(
+                [
+                    packaged_exe
+                ],
+                cwd=os.path.dirname(
+                    packaged_exe
+                )
+            )
+
+
+        # =================================================
+        # DEVELOPMENT VERSION
+        # =================================================
+
+        else:
+
+            # Check if Python file exists
+            if not os.path.exists(
+                python_file
+            ):
+
+                print(
+                    "Python file not found:"
+                )
+
+                print(
+                    python_file
+                )
+
+                return
+
+            print(
+                "Launching:"
+            )
+
+            print(
+                python_file
+            )
+
+            subprocess.Popen(
+                [
+                    sys.executable,
+                    python_file
+                ],
+                cwd=BASE_DIR
+            )
+
+
+        # Close current application
         app.destroy()
 
-    except OSError as error:
+
+    except Exception as error:
 
         print(
-            f"Could not open {file_path}"
+            "Could not open application:"
         )
 
-        print(error)
+        print(
+            error
+        )
 
 
 # =========================================================
@@ -253,18 +376,46 @@ def open_page(file_path):
 
 def on_button_click():
 
-    # If profile already exists
-    if os.path.exists(PROFILE_FILE):
+    print(
+        "GET STARTED clicked"
+    )
 
-        open_page(
-            TODO_FILE
+    print(
+        f"Profile file:\n{PROFILE_FILE}"
+    )
+
+
+    # =====================================================
+    # PROFILE EXISTS
+    # =====================================================
+
+    if os.path.exists(
+        PROFILE_FILE
+    ):
+
+        print(
+            "Profile found."
         )
 
-    # If profile does not exist
+        open_page(
+            TODO_FILE,
+            TODO_EXE
+        )
+
+
+    # =====================================================
+    # PROFILE DOES NOT EXIST
+    # =====================================================
+
     else:
 
+        print(
+            "Profile not found."
+        )
+
         open_page(
-            ACC_FILE
+            ACC_FILE,
+            ACC_EXE
         )
 
 
