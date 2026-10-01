@@ -4,6 +4,16 @@ import json
 import subprocess
 import sys
 import os
+import re
+from datetime import datetime, date
+
+
+# =========================================================
+# CUSTOMTKINTER SETTINGS
+# =========================================================
+
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("blue")
 
 
 # =========================================================
@@ -16,7 +26,10 @@ app.title("Orbit - Account Details")
 app.geometry("1000x700")
 app.resizable(True, True)
 
-app.bind("<Escape>", lambda e: app.destroy())
+app.bind(
+    "<Escape>",
+    lambda e: app.destroy()
+)
 
 
 # =========================================================
@@ -40,7 +53,7 @@ ERROR = "#FF6B6B"
 
 def resource_path(relative_path):
     """
-    Returns the correct path for both:
+    Returns the correct path for:
 
     1. Normal Python execution
     2. PyInstaller executable
@@ -48,12 +61,10 @@ def resource_path(relative_path):
 
     if getattr(sys, "frozen", False):
 
-        # PyInstaller temporary folder
         base_path = sys._MEIPASS
 
     else:
 
-        # Normal project folder
         base_path = os.path.dirname(
             os.path.abspath(__file__)
         )
@@ -76,7 +87,6 @@ APP_DATA_DIR = os.path.join(
     "Orbit"
 )
 
-# Create Orbit's data directory
 os.makedirs(
     APP_DATA_DIR,
     exist_ok=True
@@ -106,7 +116,7 @@ TODO_FILE = os.path.join(
 )
 
 
-# Packaged version
+# Installed / PyInstaller version
 TODO_EXE = os.path.join(
     os.path.dirname(
         sys.executable
@@ -161,7 +171,6 @@ bg_label.place(
     relheight=1
 )
 
-# Keep image reference
 bg_label.bg_image = bg_image
 
 
@@ -372,6 +381,147 @@ status_label.pack(
 
 
 # =========================================================
+# VALIDATION FUNCTIONS
+# =========================================================
+
+def validate_name(name):
+
+    # Allow letters and spaces
+    pattern = r"^[A-Za-z][A-Za-z .'-]{1,49}$"
+
+    return bool(
+        re.fullmatch(
+            pattern,
+            name
+        )
+    )
+
+
+# ---------------------------------------------------------
+# DATE OF BIRTH + AGE
+# ---------------------------------------------------------
+
+def validate_dob(dob):
+
+    try:
+
+        # Check format and create date
+        birth_date = datetime.strptime(
+            dob,
+            "%d-%m-%Y"
+        ).date()
+
+    except ValueError:
+
+        return False, "Use DOB format: DD-MM-YYYY."
+
+    today = date.today()
+
+    # Future DOB
+    if birth_date > today:
+
+        return False, "Date of birth cannot be in the future."
+
+    # Very old DOB
+    if birth_date.year < 1900:
+
+        return False, "Please enter a valid date of birth."
+
+    # Calculate age
+    age = (
+        today.year
+        - birth_date.year
+        - (
+            (today.month, today.day)
+            < (birth_date.month, birth_date.day)
+        )
+    )
+
+    # Minimum age
+    if age < 13:
+
+        return False, "You must be at least 13 years old."
+
+    # Unrealistic age
+    if age > 120:
+
+        return False, "Please enter a valid date of birth."
+
+    return True, age
+
+
+# ---------------------------------------------------------
+# EMAIL
+# ---------------------------------------------------------
+
+def validate_email(email):
+
+    pattern = (
+        r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+"
+        r"@"
+        r"[A-Za-z0-9]"
+        r"(?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+        r"(?:\.[A-Za-z0-9]"
+        r"(?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$"
+    )
+
+    return bool(
+        re.fullmatch(
+            pattern,
+            email
+        )
+    )
+
+
+# ---------------------------------------------------------
+# PHONE
+# ---------------------------------------------------------
+
+def validate_phone(phone):
+
+    if not phone:
+        return True
+
+    # Remove spaces, hyphens and brackets
+    cleaned_phone = re.sub(
+        r"[\s()-]",
+        "",
+        phone
+    )
+
+    # Indian number:
+    # 9876543210
+    # +919876543210
+    # 919876543210
+    pattern = r"^(?:\+91|91)?[6-9]\d{9}$"
+
+    return bool(
+        re.fullmatch(
+            pattern,
+            cleaned_phone
+        )
+    )
+
+
+# ---------------------------------------------------------
+# USERNAME
+# ---------------------------------------------------------
+
+def validate_username(username):
+
+    # 3-20 characters
+    # Letters, numbers and underscore
+    pattern = r"^[A-Za-z0-9_]{3,20}$"
+
+    return bool(
+        re.fullmatch(
+            pattern,
+            username
+        )
+    )
+
+
+# =========================================================
 # OPEN TODO APPLICATION
 # =========================================================
 
@@ -398,6 +548,14 @@ def open_todo():
                     text_color=ERROR
                 )
 
+                print(
+                    "OrbitTodo.exe not found:"
+                )
+
+                print(
+                    TODO_EXE
+                )
+
                 return
 
             subprocess.Popen(
@@ -406,6 +564,7 @@ def open_todo():
                     TODO_EXE
                 )
             )
+
 
         # =========================================
         # DEVELOPMENT VERSION
@@ -434,8 +593,10 @@ def open_todo():
                 )
             )
 
+
         # Close account window
         app.destroy()
+
 
     except Exception as error:
 
@@ -478,6 +639,18 @@ def save_profile():
         return
 
 
+    if not validate_name(name):
+
+        status_label.configure(
+            text="Please enter a valid name.",
+            text_color=ERROR
+        )
+
+        name_entry.focus()
+
+        return
+
+
     # =========================================
     # VALIDATE DOB
     # =========================================
@@ -494,6 +667,23 @@ def save_profile():
         return
 
 
+    dob_valid, age_result = validate_dob(dob)
+
+    if not dob_valid:
+
+        status_label.configure(
+            text=age_result,
+            text_color=ERROR
+        )
+
+        dob_entry.focus()
+
+        return
+
+
+    age = age_result
+
+
     # =========================================
     # VALIDATE EMAIL
     # =========================================
@@ -502,6 +692,18 @@ def save_profile():
 
         status_label.configure(
             text="Please enter your email.",
+            text_color=ERROR
+        )
+
+        email_entry.focus()
+
+        return
+
+
+    if not validate_email(email):
+
+        status_label.configure(
+            text="Please enter a valid email address.",
             text_color=ERROR
         )
 
@@ -526,6 +728,36 @@ def save_profile():
         return
 
 
+    if not validate_username(username):
+
+        status_label.configure(
+            text="Username must be 3-20 characters.",
+            text_color=ERROR
+        )
+
+        username_entry.focus()
+
+        return
+
+
+    # =========================================
+    # VALIDATE PHONE
+    # =========================================
+
+    if phone:
+
+        if not validate_phone(phone):
+
+            status_label.configure(
+                text="Enter a valid Indian phone number.",
+                text_color=ERROR
+            )
+
+            phone_entry.focus()
+
+            return
+
+
     # =========================================
     # CREATE PROFILE
     # =========================================
@@ -535,6 +767,8 @@ def save_profile():
         "name": name,
 
         "dob": dob,
+
+        "age": age,
 
         "email": email,
 
