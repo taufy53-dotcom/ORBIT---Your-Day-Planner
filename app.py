@@ -20,24 +20,65 @@ ctk.set_default_color_theme("blue")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
-# ---------------------------------------------------------
-# DEVELOPMENT PATHS
-# ---------------------------------------------------------
+# =========================================================
+# RESOURCE PATH
+# =========================================================
 
-BACKGROUND_FILE = os.path.join(
-    BASE_DIR,
-    "imgs",
-    "background.png"
+def resource_path(relative_path):
+
+    if getattr(sys, "frozen", False):
+
+        base_path = sys._MEIPASS
+
+    else:
+
+        base_path = BASE_DIR
+
+    return os.path.join(
+        base_path,
+        relative_path
+    )
+
+
+# =========================================================
+# BACKGROUND
+# =========================================================
+
+BACKGROUND_FILE = resource_path(
+    os.path.join(
+        "imgs",
+        "background.png"
+    )
 )
 
-PROFILE_FILE = os.path.join(
+
+# =========================================================
+# USER DATA
+# =========================================================
+
+APP_DATA_DIR = os.path.join(
     os.environ.get(
         "APPDATA",
         os.path.expanduser("~")
     ),
-    "Orbit",
+    "Orbit"
+)
+
+os.makedirs(
+    APP_DATA_DIR,
+    exist_ok=True
+)
+
+
+PROFILE_FILE = os.path.join(
+    APP_DATA_DIR,
     "profile.json"
 )
+
+
+# =========================================================
+# DEVELOPMENT PATHS
+# =========================================================
 
 TODO_FILE = os.path.join(
     BASE_DIR,
@@ -50,29 +91,26 @@ ACC_FILE = os.path.join(
 )
 
 
-# ---------------------------------------------------------
+# =========================================================
 # INSTALLED APPLICATION PATHS
-# ---------------------------------------------------------
+# =========================================================
 
 INSTALL_DIR = os.path.dirname(
     sys.executable
 )
 
+
 TODO_EXE = os.path.join(
     INSTALL_DIR,
+    "OrbitTodo",
     "OrbitTodo.exe"
 )
 
+
 ACC_EXE = os.path.join(
     INSTALL_DIR,
+    "OrbitAccount",
     "OrbitAccount.exe"
-)
-
-
-# Create user data directory
-os.makedirs(
-    os.path.dirname(PROFILE_FILE),
-    exist_ok=True
 )
 
 
@@ -95,7 +133,10 @@ app.minsize(
 )
 
 
-# ESC = close
+# =========================================================
+# ESC = CLOSE
+# =========================================================
+
 app.bind(
     "<Escape>",
     lambda event: app.destroy()
@@ -248,9 +289,9 @@ def open_page(
 
     try:
 
-        # -------------------------------------------------
-        # INSTALLED VERSION
-        # -------------------------------------------------
+        # =================================================
+        # INSTALLED APPLICATION
+        # =================================================
 
         if getattr(
             sys,
@@ -258,19 +299,31 @@ def open_page(
             False
         ):
 
+            print(
+                "Running installed version."
+            )
+
+            print(
+                f"Looking for:\n{executable_file}"
+            )
+
             if not os.path.exists(
                 executable_file
             ):
 
                 print(
-                    "Application not found:"
+                    "ERROR: Application not found!"
                 )
 
                 print(
-                    executable_file
+                    f"Expected path:\n{executable_file}"
                 )
 
                 return
+
+            print(
+                "Application found."
+            )
 
             print(
                 f"Launching:\n{executable_file}"
@@ -284,22 +337,26 @@ def open_page(
             )
 
 
-        # -------------------------------------------------
+        # =================================================
         # DEVELOPMENT VERSION
-        # -------------------------------------------------
+        # =================================================
 
         else:
+
+            print(
+                "Running development version."
+            )
+
+            print(
+                f"Looking for:\n{python_file}"
+            )
 
             if not os.path.exists(
                 python_file
             ):
 
                 print(
-                    "Python file not found:"
-                )
-
-                print(
-                    python_file
+                    "ERROR: Python file not found!"
                 )
 
                 return
@@ -317,7 +374,7 @@ def open_page(
             )
 
 
-        # Close current application
+        # Close Orbit main screen
         app.destroy()
 
 
@@ -337,6 +394,10 @@ def open_page(
 def on_button_click():
 
     print(
+        "========================================"
+    )
+
+    print(
         "GET STARTED clicked"
     )
 
@@ -345,9 +406,9 @@ def on_button_click():
     )
 
 
-    # -----------------------------------------------------
+    # =====================================================
     # PROFILE EXISTS
-    # -----------------------------------------------------
+    # =====================================================
 
     if os.path.exists(
         PROFILE_FILE
@@ -357,16 +418,19 @@ def on_button_click():
             "Profile found."
         )
 
-        # Open Todo
+        print(
+            "Opening Orbit Tasks..."
+        )
+
         open_page(
             TODO_FILE,
             TODO_EXE
         )
 
 
-    # -----------------------------------------------------
+    # =====================================================
     # PROFILE DOES NOT EXIST
-    # -----------------------------------------------------
+    # =====================================================
 
     else:
 
@@ -374,7 +438,10 @@ def on_button_click():
             "Profile not found."
         )
 
-        # Open Account
+        print(
+            "Opening Orbit Account..."
+        )
+
         open_page(
             ACC_FILE,
             ACC_EXE
